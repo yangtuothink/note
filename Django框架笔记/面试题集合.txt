@@ -1,0 +1,290 @@
+django 请求生命周期
+	--> 执行遵循 wsgi 协议的模块 （socket 服务端）
+		---> wsgi在这里请求数据进行初次封装 
+		---> django框架进行第二次封装成我们习惯的数据（request 对象）
+	--> 中间件 
+		---> 在请求对象中进行其他操作，例如：csrf session
+	--> 路由匹配
+	--> 视图函数 （业务处理，ORM，模板渲染）
+	--> 中间件
+		---> 对响应的数据进行处理，例如：缓存
+	--> wsgi 
+		---> 将响应内容发给浏览器
+
+http 是什么？
+	超文本传输协议 是一种规定了传输数据格式的协议
+	短链接无状态
+	请求首行 请求头 请求体
+	响应首行 响应头 响应体
+
+wsgi 是什么？
+	中文 web服务网关接口 
+	实现该协议的模块：
+		- wsgiref
+		- werkzurg
+		- uwsig
+
+中间件是什么？
+	介于request与response处理之间的一道轻量级处理过程，用于全局改变django 的输入输出
+	里面有5个方法 
+		process_request(self,request)
+		process_view(self, request, callback, callback_args, callback_kwargs)
+		process_template_response(self,request,response)
+		process_exception(self, request, exception)
+		process_response(self, request, response)
+	都用中间件做过什么？
+		登陆验证
+			装饰器方法对每个页面验证改成用中间件来做省去代码冗余
+		权限
+			当用户登陆获取当前用户的权限放入session 
+			访问目标页面的时候对目标页面的url在session中匹配
+		跨域
+			-jsonp 基于script标签的src 属性然后动态创建script标签来实现
+			-core 设置响应头 
+			应用：本地开始前后端分离的时候使用	
+
+
+视图
+	- FBV
+	- CBV
+
+
+django rest framework 
+	帮助我们快速搭建基于 restful 规范的接口的功能组件
+
+
+什么是接口?
+	- URL	python 中 
+	- Jave/c# 	A接口里面有个 a 方法，B类继承了A接口，B里面就必须要有 a 方法
+
+
+restful 规范 
+	1 根据method 不同，进行不同的操作
+		原来都是在 url 中设置。这样可以大大减少 url 的数量
+		GET/POST/PUT/DELETE/PATCH
+	2 面向资源编程 
+		视 URL 为资源
+		http://www.yangtuo.com
+	3 体现版本
+		http://v1.yangtuo.com
+		http://v2.yangtuo.com
+	4 体现是 API 
+		http://api.yangtuo.com
+		http://yangtuo.com/api/salary		
+	5 建议使用 https 更安全
+		https://www.yangtuo.com		
+	6 响应式设置状态码
+		200 300 400 500 
+		return HttpResponse("text_data",status=300)	
+	7 条件
+		http://yangtuo.com/v2/api/salary?page=1&size=10	
+	8 返回值
+		http://yangtuo.com/v2/api/salary
+			GET:	返回所有的列表
+				[
+					{"id":1,"title":"lala"},
+					{"id":2,"title":"wawa"},
+					{"id":3,"title":"kaka"},
+				]
+			POST:	返回新增的数据
+				{"id":1,"title":"tuotuo"}
+			
+			PUT:	更新全部的数据  返回更新数据
+			
+			PATCH: 	更新少量数据  返回更新数据
+			
+			DELETE:	删除数据  返回空					
+	9 返回错误信息
+		{code:10000,
+		error:"xxx错了"}	
+	10 Hypermedia API 
+		返回信息的时候加上 api 
+	
+	记忆方式
+		URL 5个 
+			https（推荐用https）://v2（版本）/yangtuo.com（域名为资源）/api（体现api）/salary?page=1&size=10（有条件）
+		请求 1 个	
+			根据method 不同，进行不同的操作
+		返回 4个
+			返回值 响应式设置状态码 返回错误信息 返回信息的时候加上api 
+
+		
+django rest faramework 框架组件 （10）
+	- 权限
+	- 认证
+	- 频率限制
+		面试题：如何实现的访问频率控制？
+			匿名用户：无法控制，因为用户可以换代理IP
+				{192.168.1.1:[1521223123.232, 1521223122.232, 1521223121.232],
+				192.168.1.2:[1521223123.232, 1521223122.232, 1521223121.232],
+				192.168.1.3:[1521223123.232, 1521223122.232, 1521223121.232],
+				192.168.1.4:[1521223123.232, 1521223122.232, 1521223121.232],
+				192.168.1.5:[1521223123.232, 1521223122.232, 1521223121.232],
+				192.168.1.6:[1521223123.232, 1521223122.232, 1521223121.232],}			
+			登录用户：如果有很多账号，也无法限制
+				{alex:[1521223123.232, 1521223122.232, 1521223121.232],
+				eric:[1521223123.232, 1521223122.232, 1521223121.232],}
+			参考源码：from rest_framework.throttling import SimpleRateThrottle
+	- 序列化 （最重要）
+		- 对于对象和 queryset对象序列化的区别
+			- queryset对象 序列化的时候需要加 many=True
+		-  many=True ？内部原理是什么呢？
+			- 实例化的时候在 调用 init 之前先调用了 new 方法
+				- new 方法基于 queryset对象返回的是 ListSerializer 对象
+				- 基于普通对象返回的就是本身 
+	- 路由
+	- 视图
+		面试题：你的写的类都继承过哪些类？
+			from rest_framework.views import APIView # *  所有的方法都在这里
+			from rest_framework.generics import GenericAPIView # 数据库链接以及数据传入
+			from rest_framework.viewsets import GenericViewSet # 期待as_view可以带参数的时候必须要继承这个类
+			from rest_framework.viewsets import ModelViewSet # 重写增删改查的时候要继承这个类
+	- 分页 
+	- 解析器
+	- 渲染器	
+		规定页面显示的效果，没什么卵用
+	- 版本 
+
+
+为什么会有跨域？
+	浏览器具有同源策略所有才出现跨域。
+	同源策略：
+		- 开放：src
+		- 禁止：ajax
+	解决跨域：
+		- jsonp，在客户端动态创建一个script标签
+			1.客户端：创建一个 
+				<script src='http://www.jxntv.cn/data/jmd-jxtv2.html'></script>
+				<script>
+					function func(arg){
+						alert(arg);
+					}
+				</script>
+			2.服务端：接收到请求并处理并返回值 "func('success')"
+				相当于：
+					<script>
+						func('success')
+					</script>
+					
+			弊端： jsonp只能进行 GET请求，而且需要两端协定函数名
+
+		- cors，设置响应头
+			- 简单请求
+			- 复杂请求
+				- options请求做预检
+				- PUT/POST....
+				
+	在django中解决方案：
+		- 中间件中设置响应头
+		- django中的一个第三方组件：cors
+			
+	补充：
+		jQuery Ajax：
+			$.ajax({
+				...
+			})
+		原生Ajax：XMLHttpRequest对象：
+			var xhr = new XMLHttpRequest()
+			
+			xhr.onreadystatechange = function(){
+				if(xhr.readyState == 4){
+					// 已经接收到全部响应数据，执行以下操作
+					var data = xhr.responseText;
+					console.log(data);
+				}
+			};
+			
+			xhr.open('POST', "/test/", true);
+			
+			// 设置请求头
+			xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset-UTF-8');
+			
+			// 发送请求
+			xhr.send('n1=1;n2=2;');
+		
+常见请求头
+	- Content-Type 
+	- User-Agent
+	- referer，可以做图片防盗链。
+	- Host
+	- cookies
+	
+常见的请求体？
+		Form表单提交：
+			POST /index http1.1\r\nhost:www.luffycity.com...\r\n\r\nusername=alex&password=123&...
+		Ajax请求：
+			POST /index http1.1\r\nhost:www.luffycity.com...\r\n\r\nusername=alex&password=123&...
+			POST /index http1.1\r\nhost:www.luffycity.com...\r\n\r\n{“username”:"alex","password":123}
+			
+		补充：django中获取请求体
+			- request.POST 	username=alex&password=123&...	只能取到这种格式的
+			- request.body 	{“username”:"alex","password":123}	可以取到所有格式的
+			
+常见的请求方法：
+	- GET/POST/DELETE/PUT/PATCH/OPTIONS
+
+常见的状态码：
+	- 200	正常
+	- 301/302	临时/永久重定向
+	- 403/404	
+	- 500	服务器错误
+	
+序列化 
+	
+	
+ORM补充：
+	- only	只取某些去除其他
+	- defer	去除某些取其他
+	- selected_related 主动连表查询	一般这个就够用了
+	- prefetch_related 进阶版连表查询 最优方案
+	a. 需求: 只取某n列
+		queryset=[ {},{}]
+		models.User.objects.all().values( 'id','name')
+		
+		queryset=[ (),()]
+		models.User.objects.all().values_list( 'id','name')
+		
+		queryset=[ obj,obj]
+		result = models.User.objects.all().only('id','name','age')	
+		# result = models.User.objects.all().defer('id','name','age')	
+		for item in reuslt:
+			print(item.id,item.name,item.age)
+	b. 需求: 打印所有用户姓名以及部门名称
+		
+		class depart:
+			title = ....
+		
+		
+		class User:
+			name = ...
+			dp = FK(depart)
+			
+		# select * from user 
+		# result = models.User.objects.all()
+		# for item in result:	# 性能低，会跨表 相当于你查10个人就跨表查了10次+本来1次
+		# 但是如果连表太多。那性能也会变差，因为表太多了
+		# 	print(item.name,item.dp.title)
+		
+		# select * from user left join depart on user.dp_id = depart.id 
+		# result = models.User.objects.all().selected_related('dp') # 主动创建了关联关系。一次查表就可以拿出来
+		# for item in result: # 就不会在发请求查询了，性能更好了
+			#print(item.name,item.dp.title )		
+		
+		# select * from user
+		# 通过python 代码获取 dp_id= [1,2]
+		# select * from depart where id in dp_id
+		result = models.User.objects.all().prefetch_related('dp')
+		for item in result: # 相当于查了两次。但是不会因为连表太多影响性能了
+			print(item.name,item.dp.title )
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		

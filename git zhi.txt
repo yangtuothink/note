@@ -1,0 +1,24 @@
+添加文件
+git add . 
+
+添加管路员邮箱
+git config --global user.email "我的邮箱"
+
+添加管理员姓名
+git config --global user.name "我的名字"
+
+上传版本 
+git commit -m "描述信息"
+
+查看状态
+
+git status 
+
+查看版本日志（只能看当前版本前的日志）
+git log	
+
+查看所有的版本日志
+git reflog
+
+回滚版本
+git reset --hard 版本号码
