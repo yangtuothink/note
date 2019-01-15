@@ -156,36 +156,37 @@ class BookModelSerializers(serializers.ModelSerializer): # 类似于 modelform �
     class Meta:
         model = Book
         fields = "__all__" 
+		# fields = ['publist','authors','title',]
 		# 默认转换的时候普通字段没啥问题
 		# title  = serializers.CharField  # 对于普通字段直接取即可    默认是 取 str(obj.title ) 
-		# 一对多 多对多字段会按照 主键值来处理
+		# 对于一对一，一对多字段会有错误的显示
+		# publish= serializers.CharField()  # 会显示对象
+　　　　# publish_id = serializers.CharField()  # 会显示id 
 
-	# 自定义对一对多和多对多字段的处理 
-	publish = serializers.CharField  #  对于一对多字段不好取了
+
+	# 自定义对一对多字段处理 
     publish = serializers.CharField(source="publish.pk")  # 加 "source=" 取 str(obj.publish.pk )
-	
 	# 给字段的赋值一个 url 地址 
 	publish=serializers.HyperlinkedIdentityField(
-            view_name="detailpublish",	# 反响解析的 别名 
+            view_name="detailpublish",	# 反向解析的 别名 
             lookup_field="publish_id",	# 找出来当前的 id 值 
-				lookup_url_kwarg="pk"	# 将lookup_field 的值赋值给 url 中
+			lookup_url_kwarg="pk"		# 将lookup_field 的值赋值给 url 中
 		)
+	# authors = serializers.SerializerMethodField(source='authors.all')  # 这样查多对多会查出来 queryset 对象
 
 
-	
-    # authors = serializers.SerializerMethodField()	# 对多对多字段的处理 
-		# def get_authors(self,obj):						# 自定义多对多的处理 
-		# 	temp=[]
-		# 	for obj in obj.authors.all():
-		# 		temp.append(obj.name)
-		# 	return temp 
-	
-		def create(self, validated_data):				# 如果自定义了字段的处理 ，需要重写 create 方法 
-			print("validated_data",validated_data)
-			book=Book.objects.create(title=validated_data["title"],price=validated_data["price"],pub_date=validated_data["pub_date"],publish_id=validated_data["publish"]["pk"])
-			book.authors.add(*validated_data["authors"])
-
-			return book
+	# 自定义对多对多字段的处理
+    authors = serializers.SerializerMethodField()  
+	def get_authors(self,obj):						# 自定义多对多的处理 
+	 	temp=[]
+	 	for obj in obj.authors.all():
+	 		temp.append(obj.name)
+	 	return temp 
+	# 如果自定义了字段的处理 ，需要重写 create 方法
+	def create(self, validated_data):				 
+		book=Book.objects.create(title=validated_data["title"],price=validated_data["price"],pub_date=validated_data["pub_date"],publish_id=validated_data["publish"]["pk"])
+		book.authors.add(*validated_data["authors"])
+		return book
 
 
  
@@ -320,7 +321,7 @@ class AuthorModelView(viewsets.ModelViewSet):
 
 
 
-# 相应器 
+# 响应器 
 from rest_framework.response import  Response
 
 
