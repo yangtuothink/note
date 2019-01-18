@@ -15,33 +15,7 @@ redis
 					k5:{('alex',60),('eva-j',80),('rt',70),}，有序集合
 			}
 	
-	使用字典：h 开头 
-		- 基本操作
-		- 慎重使用hgetall, 优先使用 hscan_iter
-		- 计数器
-		
-		注意事项：redis操作时，只有第一层value支持：list,dict ....
 	
-	使用列表： l 开头
-		lpush 左边添加
-		rpush 右边添加
-		lpop  左边取值
-		rpop  右边取值
-		blpop 带阻塞的左取值，可设置 timeout=10 超时拿到 none 
-		唯独 列表没有 iter方法。因此可以自己利用 lrange() 和 yield 自己实现一个
-		
-		事务+一次发送多个命令：
-			conn = redis.Redis(host='47.94.172.250',port=6379,password='Luffy!4321')
-
-			pipe = conn.pipeline(transaction=True)
-			pipe.multi()
-
-			pipe.set('k2','123')
-			pipe.hset('k3','n1',666)
-			pipe.lpush('k4','laonanhai')
-
-			pipe.execute()
-				
 	安装 
 		服务端 
 		- redis 软件
@@ -206,7 +180,53 @@ redis
 				</body>
 				</html>
 		
+	使用字典：h 开头 
+		- 基本操作 
+			查看 
+				conn.keys() 查看所有的数据
+				conn.keys("name_1_*")	查看所有name 以name_1_ 开头的键值
+					对 name 进行取值的时候 用 scan_iter 对key 进行过滤 分批取出
+					conn.scan_iter("name_1_*",count=10)
+				conn.hget("name","key") 根据名字自己 key 拿 值
+				conn.exists("name") 判断是否存在 
+				.conn.expire("name",60*30)  设置超时时间 30分钟 
+				
+				
+			添加 
+				hset("name","key","value") 一次只能加一对键值
+				hmset("name",{"k1":"v1","k2":"v2"})  一次可以直接加进去一个字典多个键值对
+					name 相同的时候表示就是同一个，在赋值会覆盖上次的值。
+			修改
+				hset("name","key","value")  重新赋值即可
+			删除 
+				delet("name")
+		- 字典的可以有很多层，但是取值的时候只能取出来最外层，没办法用索引继续深处取值
+		- 慎重使用hgetall, 优先使用 hscan_iter
+		- 
+		- 计数器
 		
+		注意事项：redis操作时，只有第一层value支持：list,dict ....
+	
+	使用列表： l 开头
+		lpush 左边添加
+		rpush 右边添加
+		lpop  左边取值
+		rpop  右边取值
+		blpop 带阻塞的左取值，可设置 timeout=10 超时拿到 none 
+		唯独 列表没有 iter方法。因此可以自己利用 lrange() 和 yield 自己实现一个
+		
+		事务+一次发送多个命令：
+			conn = redis.Redis(host='47.94.172.250',port=6379,password='Luffy!4321')
+
+			pipe = conn.pipeline(transaction=True)
+			pipe.multi()
+
+			pipe.set('k2','123')
+			pipe.hset('k3','n1',666)
+			pipe.lpush('k4','laonanhai')
+
+			pipe.execute()
+				
 		
 		
 		

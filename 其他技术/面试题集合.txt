@@ -20,12 +20,48 @@ http 是什么？
 
 
 wsgi 是什么？
-	中文 web服务网关接口
+	中文 web服务网关接口，wsgi 是一个协议
 	实现该协议的模块：
 		- wsgiref
 		- werkzurg
 		- uwsig
+		实现其协议的模块本质上就是socket服务端用于接受用户请求
+	一般web 框架都是基于 wsgi 来实现。从而实现关注点分离
+	框架关注 请求的处理。 wsgi关注 拿请求
+		wsgiref示例：
+			from wsgiref.simple_server import make_server
+ 
+			def run_server(environ, start_response):
+				start_response('200 OK', [('Content-Type', 'text/html')])
+				return [bytes('<h1>Hello, web!</h1>', encoding='utf-8'), ]
+			 
+			 
+			if __name__ == '__main__':
+				httpd = make_server('127.0.0.1', 8000, run_server)
+				httpd.serve_forever()
+		
+		werkzeug示例：
+			from werkzeug.wrappers import Response
+			from werkzeug.serving import run_simple
 
+			def run_server(environ, start_response):
+				response = Response('hello')
+				return response(environ, start_response)
+
+			if __name__ == '__main__':
+				run_simple('127.0.0.1', 8000, run_server)
+
+		Flask源码入口：
+			from werkzeug.wrappers import Response
+			from werkzeug.serving import run_simple
+
+			class Flask(object):
+				def __call__(self,environ, start_response):
+					response = Response('hello')
+					return response(environ, start_response)
+
+				def run(self):
+					run_simple('127.0.0.1', 8000, self)
 
 中间件是什么？
 	介于request与response处理之间的一道轻量级处理过程，用于全局改变django 的输入输出
@@ -388,7 +424,16 @@ orm 补充2：
 	- 支付宝收不到 succes 会一直发生 24小时的请求。才会结束
 
 
-
+谈谈你对django 和 flask 的认识
+	django 内容比较丰富 大型项目推荐用django
+	flask 更加精练 直接导入就可以使用 但是扩展性很强 小型的轻量级的项目推荐用 flask 
+	最大的不同 
+		request 
+			django  通过参数传递
+			flask 	通过模块导入
+		session 
+			django  依附在request 里面 
+			flask 	通过模块导入
 
 
 
