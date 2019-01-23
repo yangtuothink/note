@@ -6,14 +6,14 @@
 """
 
 
-from flask import Flask 
+	from flask import Flask 
 
-app = Flask(__name__)
+	app = Flask(__name__)
 
-def index():
-	return "index"
+	def index():
+		return "index"
 
-if —__name__ == "__main__":
+	if —__name__ == "__main__":
 	app.run()
 
 
@@ -65,6 +65,11 @@ if —__name__ == "__main__":
 		endpoint 
 			类似于django 中的反向解析用的 name=""
 			未指定的时候默认是绑定函数名 endpoint="index"
+				ps: 
+					如果两个函数都用了装饰器，装饰器还没有 wraps
+					endpoint 默认等于 函数名。
+					会把装饰器内的 inner 作为  endpoint 值导致出问题
+					因此如果再加装装饰器一定要加 wraps 
 		view_func 
 			视图函数名称
 		strict_slashes
@@ -117,54 +122,6 @@ if —__name__ == "__main__":
 		"""
 	add_url_rule("/index",None,UserView.as_view("endpoint")) 
 	
-	
-	
-	"""
-	请求，响应的参数和类性
-	"""
-	def index(nid):
-		"""
-		请求相关信息
-		
-		* request.method 
-		* request.args
-		* request.form
-		* request.values
-		* request.cookies
-		* request.headers
-		request.path
-		request.full_path
-		request.script_root
-		request.url
-		request.base_url
-		request.url_root
-		request.host_url
-		request.host
-		request.files
-		obj = request.files['the_file_name']
-		obj.save('/var/www/uploads/' + secure_filename(f.filename))
-		"""
-		dic = {"k1":"v1"}
-		"""
-		返回响应体的4种形式 
-			字符串
-			jsonify
-			模板
-			url 
-		"""
-		return "index"
-		return jsonify(dic)
-		return render_template("xxx.html",dic=dic)	# 可带数据传递
-		return redirect(url_for("index"))	# 跳转通过 url_for 反向解析 
-		"""
-		定制响应头的时候构造响应体用到 make_response
-		"""
-		from flask import make_response,headers,set_cookie
-		obj = make_response(jsonify(dic))
-		obj.headers["xxxxx"] = "123"
-		obj.set_cookie("key","value")
-		return obj
-		
 	"""
 	动态匹配 URL 相关操作 
 	"""
@@ -215,18 +172,69 @@ if —__name__ == "__main__":
 
 	if __name__ == '__main__':
 		app.run()	
+	
+	"""
+	请求，响应的参数和类性
+	"""
+	def index(nid):
+		"""
+		请求相关信息
+		
+		* request.method 
+		* request.args
+		* request.form
+		* request.values
+		* request.cookies
+		* request.headers
+		request.path
+		request.full_path
+		request.script_root
+		request.url
+		request.base_url
+		request.url_root
+		request.host_url
+		request.host
+		request.files
+		obj = request.files['the_file_name']
+		obj.save('/var/www/uploads/' + secure_filename(f.filename))
+		"""
+		dic = {"k1":"v1"}
+		"""
+		返回响应体的4种形式 
+			字符串
+			jsonify
+			模板
+			url 
+		"""
+		return "index"
+		return jsonify(dic)
+		return render_template("xxx.html",dic=dic)	# 可带数据传递
+		return redirect(url_for("index"))	# 跳转通过 url_for 反向解析 
+		"""
+		定制响应头的时候构造响应体用到 make_response
+		"""
+		from flask import make_response,headers,set_cookie
+		obj = make_response(jsonify(dic))
+		obj.headers["xxxxx"] = "123"
+		obj.set_cookie("key","value")
+		return obj
+		
+	
 
 
+"""
+装饰器方法实现中间件功能
+"""
 
-装饰器方法实现中间件功能呢
 
-	版本一：
+	# 版本一：
 	@app.route('/index')
 	def index():
 		if not session.get('user'):
 			return redirect(url_for('login'))
 		return render_template('index.html',stu_dic=STUDENT_DICT)
-	版本二：
+	
+	# 版本二：
 	import functools
 	def auth(func):
 		@functools.wraps(func)
@@ -242,9 +250,9 @@ if —__name__ == "__main__":
 	def index():
 		return render_template('index.html',stu_dic=STUDENT_DICT)
 
-	应用场景：比较少的函数中需要额外添加功能。
+	# 应用场景：比较少的函数中需要额外添加功能。
 	
-	版本三：before_request 全局 
+	# 版本三：before_request 全局 
 	@app.before_request
 	def xxxxxx():
 		if request.path == '/login':
@@ -257,7 +265,9 @@ if —__name__ == "__main__":
 
 
 
+"""
 模板渲染 
+"""
 	- 基本数据类型：可以执行python语法，如：dict.get()  list['xx']
 	- 传入函数
 		- django，自动执行
@@ -322,8 +332,9 @@ if —__name__ == "__main__":
 		- 前端： MarkUp("asdf")
 
 
-
+"""
 session 
+"""
 	加密后放在用户浏览器的 cookie 中  
 		流程 
 			请求到来
@@ -339,16 +350,16 @@ session
 			del session['k1']
 
 			return "Session"
-
-				
-					
+	
 				session['xxx'] = 123
 				session['xxx']
 				
 	当请求结束时，flask会读取内存中字典的值，进行序列化+加密，写入到用户cookie中。
 
-
-闪现，在session中存储一个数据，读取时通过pop将数据移除。
+"""
+闪现
+"""
+	在session中存储一个数据，读取时通过pop将数据移除。
 	from flask import Flask,flash,get_flashed_messages
 	@app.route('/page1')
 	def page1():
@@ -365,7 +376,10 @@ session
 		return "Session"
 	
 
-中间件 基本上不会用，还是用装饰器的方法比较方便
+"""
+中间件
+"""
+	基本上不会用，还是用装饰器的方法比较方便
 
 	- call方法什么时候出发？
 		- 用户发起请求时，才执行。
@@ -383,8 +397,10 @@ session
 			app.wsgi_app = Middleware(app.wsgi_app)
 			app.run()
 		
-
+"""
 特殊装饰器 
+"""
+
 
 	1. before_request	谁先定义谁先执行
 	执行多个 before 的时候如果再中间有返回值，对于after 的执行直接执行最后一次定义的那个
