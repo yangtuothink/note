@@ -101,13 +101,66 @@ wsgi 是什么？
 				flask 	通过模块导入
 	"""
 	
+request.POST 获取不到值的原因 ？ 如何解决？
+	"""
+	发送数据格式：
+		方式一：
+			request.post(
+				url='xx',
+				data={'k1':'v1,'k2':'v2'}
+			)
+			#数据：  POST /  http1.1\r\nContent-type:urlencode-form.......\r\n\r\nk1=v1&k2=v2
+			保证以下条件 request.POST  必然可取到值
+				- content-type: urlencode-form
+				- 数据格式：k1=v1&k2=v2
 
-
-
-
-
-
-
+		方式二：
+			request.post(
+				url='xx',
+				json={'k1':'v1,'k2':'v2'}
+			)
+			#数据：  POST /  http1.1\r\nContent-type:application/json....\r\n\r\n{'k1':'v1,'k2':'v2'}
+			只能在 request.body  中取值
+				取值的时候要 转换字符串 以及 反序列化
+					字节 = {'k1':'v1,'k2':'v2'}
+					字节转换字符串
+					反序列化字符串 -> 字典 
+		
+	如何判断发生的是 data 还是 json 格式的数据？
+		在 chrome 浏览器中可以查看回应的数据 ->
+			Form Data:
+				phone=861513125555&password=12312312312&oneMonth=1
+				
+				reqeusts.post(
+					url=url,
+					data={
+						phone:123123123123,
+						password:asdfasdf
+					}
+				)
+			
+			Request Payload:
+				{"BaseRequest":{"Uin":981579400,"Sid":"zWvteTWqBop4heoT","Skey":"@crypt_2ccf8ab9_a710cf413c932e201987599558063c8e","DeviceID":"e358217921593270"},"Msg":{"Type":1,"Content":"test","FromUserName":"@60eef3f2d212721fda0aae891115aa7a","ToUserName":"@@6a5403f510a3192454ed1afebd78ec6033d5057c9038d7b943b201f0a74987d4","LocalID":"15300708105840758","ClientMsgId":"15300708105840758"},"Scene":0}
+			
+				reqeusts.post(
+					url=url,
+					json={
+						phone:123123123123,
+						password:asdfasdf
+					}
+				)
+				
+				reqeusts.post(
+					url=url,
+					data=bytes(json.dumps({
+						phone:123123123123,
+						password:asdfasdf
+					}),encoding=utf-8)
+				)
+		在 火狐 浏览器中可以查看回应的数据 中文显示更明显 
+			表单数据
+			Json 
+	"""
 
 
 

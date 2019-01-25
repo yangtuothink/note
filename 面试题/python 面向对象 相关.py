@@ -89,6 +89,7 @@
 
 类创建的有几种方式？
 """
+# 两种方式
 class Foo(object):
 	a1 = 123
 	def func(self):
@@ -137,7 +138,7 @@ foo = Foo()
 """
 
 
-一个类怎么样才可以被for 循环？
+一个类怎么样才可以被 for 循环？
 	"""
 	变成 可迭代对象 
 	要有 __iter__ 方法 且 要返回可迭代对象
@@ -171,5 +172,67 @@ __new__ 方法的返回值决定对象到底是什么？
 	obj = Foo()
 	print(obj)
 	"""
+
+python 中怎么实现面向对象的约束 ？和其他语言有什么区别?
+	"""
+	jave/c# 中有接口 ，抽象方法，抽象方法来约束 
+		接口 ：	（只做约束）
+			Interface Xxx：
+				def func1(self):
+					pass	# 必须是空的
+			Interface Aaa(Xxx)：
+				def func1(self):	# 基类中的方法，子类必须要有
+					print("func1")	
+		抽象方法，抽象类：	（约束+继承）
+			class abstract IMessage: # 加 abstract 表示抽象类
+				def abstract func1(self):	
+					pass 
+				def abstract func2(self)： # 加 abstract 表示抽象方法
+					pass 
+				def func3(self):	# 非抽象方法就没有约束
+					print('asdfasdf') 
+			class Msg(IMessage):
+				def func1(self):	# 必须要有同名方法
+					print('func1') 
+				def func2(self):
+					print('func1') 
+	
+	python 没有接口，但是有抽象方法抽象类
+		方法一： ABC 
+		方法二：
+			# 类继承 + 异常 
+			class BaseMessage(object):
+				def send(self):
+					raise NotImplementedError('必须实现send方法')
+			class Msg(BaseMessage):
+				def send(self):
+					print('发送短信')
+			class Wechat(BaseMessage):
+				def send(self):
+					print('发送微信')
+		应用场景：
+			在rest_framework 中的 认证的时候必须要求继承 BaseAuthentiction 的时候
+			BaseAuthentiction 的 authenticate 就要求子类必须实现 authenticate 方法 
+	"""
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 	
