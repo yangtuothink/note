@@ -102,7 +102,7 @@ django rest faramework 框架组件 （10）
 	- 版本
 	"""
 
-谈谈你对 django rest framework框架的认识？
+谈谈你对 django rest framework 框架的认识？
 	"""
 	- 路由， 
 		- 可以通过as_view传参数，根据请求方式不同执行相应的方法
@@ -140,7 +140,7 @@ django rest faramework 框架组件 （10）
 			  解决：
 					- 限制显示的页数
 					- 记录当前页数据ID最大值和最小值，再次分页时，根据ID现行筛选，然后再分页。
-	- 序列化  
+	- 序列化
 		- 对queryset序列化以及对请求数据格式校验。
 	- 渲染器
 		- 根据URL中传入的后缀，决定在数据如何渲染到到页面上。
@@ -157,7 +157,7 @@ django rest framework生命周期：
 	版本-->
 	认证-->
 	权限-->
-	限流-->
+	频率-->
 	视图-->
 	如果视图用到缓存( request.data or   request.query_params )就用到了 解析器-->
 	视图处理数据，用到了序列化(对数据进行序列化或验证) -->

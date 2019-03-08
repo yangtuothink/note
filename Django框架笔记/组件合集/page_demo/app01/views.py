@@ -14,8 +14,6 @@ def index(request):
         book_obj=Book(title="book_%s"%i,price=i*i)
         book_list.append(book_obj)
     Book.objects.bulk_create(book_list)
-    :param request:
-    :return:
     '''
     current_page = request.GET.get("page", 1)
     all_count = Book.objects.all().count()

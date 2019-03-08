@@ -35,39 +35,34 @@ class APIView(View):	# 继承原生的 View
 	def as_view(cls, **initkwargs):	# 重写了 as_view 方法 
 	...
 		return csrf_exempt(view)	# 返回的是 View 中的 view 方法 
-									# view 会返回 dispatch，APIView类中有 dispatch ，因此会执行APIView类中的 
-    
-																											def dispatch(self, request, *args, **kwargs):	# 相当于重写了  View 中的 dispatch方法  
-																												...
-																												request = self.initialize_request(request, *args, **kwargs)	 # 重新定义了 request 
-																												...
-																												try:
-																													self.initial(request, *args, **kwargs)		# 涉及初始化 认证，权限，频率组件 
-																													if request.method.lower() in self.http_method_names:	# 根据拿到视图函数的 handler
-																														handler = getattr(self, request.method.lower(),
-																																		  self.http_method_not_allowed)
-																													else:
-																														handler = self.http_method_not_allowed
-																													response = handler(request, *args, **kwargs)	# 执行 handler() 
-																												except Exception as exc:
-																													response = self.handle_exception(exc)
-																												self.response = self.finalize_response(request, response, *args, **kwargs)
-																												return self.response	# 返回所有结果 
-		
+		# view 会返回 dispatch，APIView类中有 dispatch ，因此会执行APIView类中的 
+																									def dispatch(self, request, *args, **kwargs):	# 相当于重写了  View 中的 dispatch方法  
+																										...
+																										request = self.initialize_request(request, *args, **kwargs)	 # 重新定义了 request 
+																										...
+																										try:
+																											self.initial(request, *args, **kwargs)		# 涉及初始化 认证，权限，频率组件 
+																											if request.method.lower() in self.http_method_names:	# 根据拿到视图函数的 handler
+																												handler = getattr(self, request.method.lower(),
+																																  self.http_method_not_allowed)
+																											else:
+																												handler = self.http_method_not_allowed
+																											response = handler(request, *args, **kwargs)	# 执行 handler() 
+																										except Exception as exc:
+																											response = self.handle_exception(exc)
+																										self.response = self.finalize_response(request, response, *args, **kwargs)
+																										return self.response	# 返回所有结果 
 	def initialize_request(self, request, *args, **kwargs):	# 重新封装 APIView 自己的 request 
 		...
 		return Request(
 			request,	# View 的request 作为参数传过去了
 			...
 		)	
-	
-	# APIView 自己的 一个处理函数 
-		
+# APIView 自己的 一个处理函数 
 																		class Request(object):
 																			...
 																		self._request = request		# 将View 的request 封装成 _request
-																		
-
+																	
 # 版本控制代码 
 def determine_version(self, request, *args, **kwargs):
 	
@@ -75,19 +70,15 @@ def determine_version(self, request, *args, **kwargs):
 		return (None, None)
 	scheme = self.versioning_class()									
 	return (scheme.determine_version(request, *args, **kwargs), scheme)
-
-
-
-
-def initial(self, request, *args, **kwargs):
-	# 版本控制操作 
-	version, scheme = self.determine_version(request, *args, **kwargs)
-    request.version, request.versioning_scheme = version, scheme
-	
-	# 认证，权限，频率 处理  
-	self.perform_authentication(request)
-	self.check_permissions(request)
-	self.check_throttles(request)
+																													def initial(self, request, *args, **kwargs):
+																														# 版本控制操作 
+																														version, scheme = self.determine_version(request, *args, **kwargs)
+																														request.version, request.versioning_scheme = version, scheme
+																														
+																														# 认证，权限，频率 处理  
+																														self.perform_authentication(request)
+																														self.check_permissions(request)
+																														self.check_throttles(request)
 
 		
 		

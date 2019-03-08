@@ -40,11 +40,21 @@ serializers.serializers("json",obj)  	将对象装换成 json 对象
 update_or_create 有的话酒更新，没有的话就创建		
 UserToken.objects.update_or_create(user=user_obj,defaults={"token":token})	
 
-		  
+Django model中数据批量导入bulk_create()
+	create 会返回 创建的对象
+	同理 form.save 也是返回对象
+	update 会返回更新条数   
 
-
-
-
+form字段对象在前端显示的时候特殊点
+	limit_choice_to 转换成 forms 的时候进行一次过滤后显示
+		gender = models.IntegerField(verbose_name='性别', limit_choice_to = {"depart":[1005,1006]})
+		Customer.objects.filter(depart__in[1005,1006]).valurs("pk0","title")
+	choices属性 渲染成form的时候前端可以选择显示 (choices属性 在所有字段中都可以使用)
+		
+		gender = models.IntegerField(verbose_name='性别', choices = [(1,"男"),(2,"女")])
+		obj = Customer.objects.create(gender=1)	# 保存在数据库的是 "1" 而不是 "男"
+		obj.gender   # 1
+		obj.get_gender_dispaly()  # 男
 
 
 

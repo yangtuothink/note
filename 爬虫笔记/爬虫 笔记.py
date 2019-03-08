@@ -386,9 +386,375 @@ start_urls
 	- 定制：可以去redis中获取
 
 
+- scrapy中设置代理 
+	- 内置
+		在爬虫启动时，提前在os.envrion中设置代理即可。
+			class ChoutiSpider(scrapy.Spider):
+				name = 'chouti'
+				allowed_domains = ['chouti.com']
+				start_urls = ['https://dig.chouti.com/']
+				cookie_dict = {}
+
+				def start_requests(self):
+					import os
+					os.environ['HTTPS_PROXY'] = "http://root:woshiniba@192.168.11.11:9999/"
+					os.environ['HTTP_PROXY'] = '19.11.2.32',
+					for url in self.start_urls:
+						yield Request(url=url,callback=self.parse)
+		meta:
+			class ChoutiSpider(scrapy.Spider):
+				name = 'chouti'
+				allowed_domains = ['chouti.com']
+				start_urls = ['https://dig.chouti.com/']
+				cookie_dict = {}
+
+				def start_requests(self):
+					for url in self.start_urls:
+						yield Request(url=url,callback=self.parse,meta={'proxy':'"http://root:woshiniba@192.168.11.11:9999/"'})
+
+	- 自定义
+		import base64
+		import random
+		from six.moves.urllib.parse import unquote
+		try:
+			from urllib2 import _parse_proxy
+		except ImportError:
+			from urllib.request import _parse_proxy
+		from six.moves.urllib.parse import urlunparse
+		from scrapy.utils.python import to_bytes
+
+		class XdbProxyMiddleware(object):
+
+			def _basic_auth_header(self, username, password):
+				user_pass = to_bytes(
+					'%s:%s' % (unquote(username), unquote(password)),
+					encoding='latin-1')
+				return base64.b64encode(user_pass).strip()
+
+			def process_request(self, request, spider):
+				PROXIES = [
+					"http://root:woshiniba@192.168.11.11:9999/",
+					"http://root:woshiniba@192.168.11.12:9999/",
+					"http://root:woshiniba@192.168.11.13:9999/",
+					"http://root:woshiniba@192.168.11.14:9999/",
+					"http://root:woshiniba@192.168.11.15:9999/",
+					"http://root:woshiniba@192.168.11.16:9999/",
+				]
+				url = random.choice(PROXIES)
+
+				orig_type = ""
+				proxy_type, user, password, hostport = _parse_proxy(url)
+				proxy_url = urlunparse((proxy_type or orig_type, hostport, '', '', '', ''))
+
+				if user:
+					creds = self._basic_auth_header(user, password)
+				else:
+					creds = None
+				request.meta['proxy'] = proxy_url
+				if creds:
+					request.headers['Proxy-Authorization'] = b'Basic ' + creds
+
+- 下载中间件 
+		写中间件：
+			from scrapy.http import HtmlResponse
+			from scrapy.http import Request
+
+			class Md1(object):
+				@classmethod
+				def from_crawler(cls, crawler):
+					# This method is used by Scrapy to create your spiders.
+					s = cls()
+					return s
+
+				def process_request(self, request, spider):	
+					print('md1.process_request',request)
+					return None # 返回如果是 空就会继续往下执行下一个中间件的 process_request 方法，如果一旦有返回值就要考虑情况
+					"""
+					# 1. 返回 Response
+					# 返回 Response 之后会往下执行 最后一个中间件的 process_response 方法 
+					# import requests
+					# result = requests.get(request.url)
+					# return HtmlResponse(url=request.url, status=200, headers=None, body=result.content)
+					
+					# 2. 返回 Request
+					# 返回 Request 之后 相当于无视了这次的请求 重新回到 调制器 那边，相当于又产生了新的任务
+					# return Request('https://dig.chouti.com/r/tec/hot/1')
+
+					# 3. 抛出异常	
+					# 抛出异常 必须要 有 process_exception 方法进行捕捉异常，不然会报错
+					# process_exception 方法在进行一系列的操作 在捕捉到异常的时候 
+					# from scrapy.exceptions import IgnoreRequest
+					# raise IgnoreRequest
+					
+					# 4. 对请求进行加工(*) 
+					# 通常我们都是用于对请求加工，然后再继续下面操作不返回东西 
+					# request.headers['user-agent'] = "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36"
+					# return None
+					"""
+
+				def process_response(self, request, response, spider):
+					# Called with the response returned from the downloader.
+
+					# Must either;
+					# - return a Response object	# 返回一个 Response 来代替当前的 Response
+					# - return a Request object		# 返回一个 Request 开启新任务 
+					# - or raise IgnoreRequest		# 返回一个 IgnoreRequest 进行异常捕捉 
+					print('m1.process_response',request,response)
+					return response
+
+				def process_exception(self, request, exception, spider):
+					# Called when a download handler or a process_request()
+					# (from other downloader middleware) raises an exception.
+
+					# Must either:
+					# - return None: continue processing this exception
+						# 通常我们都是直接返回 None 就可以了
+					# - return a Response object: stops process_exception() chain	# 只要返回了 Response 当前的 process_exception 就不做操作了 
+						# 返回 Response 表示交给下一个 中间件的 process_exception 继续处理 
+					# - return a Request object: stops process_exception() chain	# 只要返回了 Request 当前的 process_exception 就不做操作了 
+						# 返回 Request 放弃本次任务，新建任务 	
+					pass
+
+		配置：
+			DOWNLOADER_MIDDLEWARES = {	
+			   #'xdb.middlewares.XdbDownloaderMiddleware': 543,
+				# 'xdb.proxy.XdbProxyMiddleware':751,
+				'xdb.md.Md1':666,	# 依旧是 0-1000 越小越优先 
+				'xdb.md.Md2':667,
+			}
+		
+		执行顺序 
+			调度器给 下载器的时候先走 process_request（从第一个中间件往最后一个走） 然后如果根据返回情况进行判断接下来的方向
+				返回 None 继续下一个中间件的 process_request
+				返回 Response 进入 最后一个下载中间件的 process_response 流程
+				返回 Request 返回 调度器开启新任务 
+				返回 异常  进入当前中间件的 process_exception 进行异常处理
+			下载器还给 爬虫的时候要走 process_response（从最后一个中间件往第一个走）然后如果根据返回情况进行判断接下来的方向
+				返回 None 继续上一个中间件的 process_response
+				返回 Response 替换当前Response 进入上一个下载中间件的 process_response 流程
+				返回 Request 返回 调度器开启新任务 放弃当前的任务  
+				返回 异常  进入当前中间件的 process_exception 进行异常处理
+		应用：
+			- user-agent # 所有的请求都加 user-agent	
+				# 其实不需要做，默认自带一个 可以添加 user-agent 的功能
+				# 再 settings 中 USER_AGENT = '' 直接配置就可以实现这个功能 
+			- 代理 	# 请求代理操作 
+						
+	- 爬虫中间件	
+		class Sd1(object):
+			# Not all methods need to be defined. If a method is not defined,
+			# scrapy acts as if the spider middleware does not modify the
+			# passed objects.
+
+			@classmethod
+			def from_crawler(cls, crawler):
+				# This method is used by Scrapy to create your spiders.
+				s = cls()
+				return s
+
+			def process_spider_input(self, response, spider):
+				# Called for each response that goes through the spider
+				# middleware and into the spider.
+
+				# Should return None or raise an exception.
+				return None
+
+			def process_spider_output(self, response, result, spider):
+				# Called with the results returned from the Spider, after
+				# it has processed the response.
+
+				# Must return an iterable of Request, dict or Item objects.
+				for i in result:
+					yield i
+
+			def process_spider_exception(self, response, exception, spider):
+				# Called when a spider or process_spider_input() method
+				# (from other spider middleware) raises an exception.
+
+				# Should return either None or an iterable of Response, dict
+				# or Item objects.
+				pass
+
+			# 只在爬虫启动时，执行一次。
+			def process_start_requests(self, start_requests, spider):
+				# Called with the start requests of the spider, and works
+				# similarly to the process_spider_output() method, except
+				# that it doesn’t have a response associated.
+
+				# Must return only requests (not items).
+				for r in start_requests:
+					yield r
+
+		配置：	
+			SPIDER_MIDDLEWARES = {
+			   # 'xdb.middlewares.XdbSpiderMiddleware': 543,
+				'xdb.sd.Sd1': 666,	# 同爬虫中间件一样的判断机制 
+				'xdb.sd.Sd2': 667,
+			}
+		
+		执行流程 ：
+			第一次启动爬虫文件封装好 request 之后 走 process_start_requests 上传给引擎 
+			然后 引擎将封装好的 request 给调度器 
+			调度器 继续执行 给下载器
+			下载器 下载了内容之后给 引擎 
+			引擎再给 爬虫文件的时候要走 process_spider_input 
+			爬虫文件处理完之后如果有  yield 就要在走 process_spider_output 给引擎 
+		
+		应用：
+			- 深度
+			- 优先级
+			
+定制命令
+	- 单爬虫运行：
+		import sys
+		from scrapy.cmdline import execute
+
+		if __name__ == '__main__':
+			execute(["scrapy","crawl","chouti","--nolog"])
+	- 所有爬虫：
+		- 在spiders同级创建任意目录，如：commands
+		- 在其中创建 crawlall.py 文件 （此处文件名就是自定义的命令）
+		- 在settings.py 中添加配置 COMMANDS_MODULE = '项目名称.目录名称'
+		- 在项目目录执行命令：scrapy crawlall 
+	
+	# crawlall.py
+	from scrapy.commands import ScrapyCommand
+	from scrapy.utils.project import get_project_settings
 
 
+	class Command(ScrapyCommand):
 
+		requires_project = True
+
+		def syntax(self):
+			return '[options]'
+
+		def short_desc(self):
+			return 'Runs all of the spiders'
+
+		def run(self, args, opts):
+			spider_list = self.crawler_process.spiders.list()
+			for name in spider_list:
+				self.crawler_process.crawl(name, **opts.__dict__)
+			self.crawler_process.start()
+	
+	# settings.py
+	# 自定制命令目录
+	COMMANDS_MODULE  = "xdb.commands"
+
+
+信号 使用框架预留的位置，帮助你自定义一些功能
+		from scrapy import signals
+
+		class MyExtend(object):
+			def __init__(self):
+				pass
+
+			@classmethod
+			def from_crawler(cls, crawler):
+				self = cls()
+
+				crawler.signals.connect(self.x1, signal=signals.spider_opened)
+				crawler.signals.connect(self.x2, signal=signals.spider_closed)
+
+				return self
+
+			def x1(self, spider):
+				print('open')
+
+			def x2(self, spider):
+				print('close')
+	
+		"""
+		# 信号可选类型  from scrapy import signals 中可以看到 
+		engine_started = object()
+		engine_stopped = object()
+		
+		spider_opened = object()
+		spider_idle = object()
+		spider_closed = object()
+		spider_error = object()
+		
+		request_scheduled = object()
+		request_dropped = object()
+		response_received = object()
+		response_downloaded = object()
+		
+		item_scraped = object()
+		item_dropped = object()
+		"""
+	配置：
+		EXTENSIONS = {
+			'xdb.ext.MyExtend':666,
+		}
+
+
+scrapy配置
+		- USER_AGENT	# 所有的都加上 USER_AGENT
+		- ROBOTSTXT_OBEY	# 君子协定 True 的时候会试探性的发送一次请求 查看是否允许爬取，为 Fales 就暴力爬取无视协议
+		
+		- CONCURRENT_REQUESTS = 32	# 全部的并发请求数量  存在CONCURRENT_REQUESTS_PER_DOMAIN/IP 的时候此配置不生效
+		- CONCURRENT_REQUESTS_PER_DOMAIN = 16	# 对每个域名的并发请求数量
+		- CONCURRENT_REQUESTS_PER_IP = 16	# 对每个 IP 的并发请求数量
+		
+		- DEFAULT_REQUEST_HEADERS = {	# 常见的请求头
+			   'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+			   'Accept-Language': 'en',
+			}
+		- 下载中间级
+		
+		- 爬虫中间件
+		
+		- pipeline
+		
+		- EXTENSIONS	# 基于信号的扩展
+		
+		- 缓存机制 
+		# HTTPCACHE_ENABLED = True
+		# HTTPCACHE_EXPIRATION_SECS = 0
+		# HTTPCACHE_DIR = 'httpcache' # 本地会生成一个 httpcache 的目录保存爬取数据
+		# HTTPCACHE_IGNORE_HTTP_CODES = []
+		# HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
+
+		
+		
+		
+		- DOWNLOAD_DELAY = 3	# 下载页面的时候 3s 的延迟 
+		
+		- 智能限速
+			"""
+			自动限速算法
+			from scrapy.contrib.throttle import AutoThrottle
+			自动限速设置
+			1. 获取最小延迟 DOWNLOAD_DELAY
+			2. 获取最大延迟 AUTOTHROTTLE_MAX_DELAY
+			3. 设置初始下载延迟 AUTOTHROTTLE_START_DELAY
+			4. 当请求下载完成后，获取其"连接"时间 latency，即：请求连接到接受到响应头之间的时间
+			5. 用于计算的... AUTOTHROTTLE_TARGET_CONCURRENCY
+			
+			target_delay = latency / self.target_concurrency
+			new_delay = (slot.delay + target_delay) / 2.0 # 表示上一次的延迟时间
+			new_delay = max(target_delay, new_delay)
+			new_delay = min(max(self.mindelay, new_delay), self.maxdelay)
+			slot.delay = new_delay
+
+
+			# 智能限速 
+			#AUTOTHROTTLE_ENABLED = True
+			# The initial download delay
+			#AUTOTHROTTLE_START_DELAY = 5
+			# The maximum download delay to be set in case of high latencies
+			#AUTOTHROTTLE_MAX_DELAY = 60
+			# The average number of requests Scrapy should be sending in parallel to
+			# each remote server
+			#AUTOTHROTTLE_TARGET_CONCURRENCY = 1.0
+			# Enable showing throttling stats for every response received:
+			#AUTOTHROTTLE_DEBUG = False
+			"""
+	
+	
+
+	
 
 
 
